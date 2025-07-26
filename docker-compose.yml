@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  keycloak-db:
+    image: postgres:17
+    container_name: keycloak-db
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Eghy@@2002
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - cosmos-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+##############################
+  iam-db:
+    image: postgres:17
+    container_name: iam-db
+    restart: always
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: cosmos_iam_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Eghy@@2002
+    volumes:
+      - iam_db_data:/var/lib/postgresql/data
+    networks:
+      - cosmos-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d cosmos_iam_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+##############################
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.0
+    container_name: keycloak
+    restart: always
+    command: start-dev --http-port=8080
+    ports:
+      - "8090:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: Eghy@@2002
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KEYCLOAK_ADMIN: oussama
+      KEYCLOAK_ADMIN_PASSWORD: Eghy@@2002
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - cosmos-net
+
+#  cosmos-iam-service:
+#    build: .
+#    container_name: cosmos-iam-service
+#    restart: always
+#    ports:
+#      - "8081:8081"
+#    environment:
+#      # Variables d'environnement pour la base de données
+#      DB_HOST: keycloak-db
+#      DB_PORT: 5432
+#      DB_NAME: keycloak
+#      DB_USERNAME: postgres
+#      DB_PASSWORD: Eghy@@2002
+#      # Variables Keycloak
+#      COSMOS_KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
+#      COSMOS_KEYCLOAK_ADMIN_REALM: COSMOS
+#      COSMOS_KEYCLOAK_REALM: COSMOS
+#      COSMOS_KEYCLOAK_ADMIN_CLIENT_ID: cosmos-iam-service
+#      COSMOS_KEYCLOAK_ADMIN_CLIENT_SECRET: RPfXE9r9krpMcacgmSZomRJlRqzq2S8s
+#    depends_on:
+#      keycloak-db:
+#        condition: service_healthy
+#      keycloak:
+#        condition: service_started
+#    networks:
+#      - cosmos-net
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "8088:8080"
+    networks:
+      - cosmos-net
+
+volumes:
+  keycloak_db_data:
+  iam_db_data:
+
+networks:
+  cosmos-net:
+    driver: bridge
