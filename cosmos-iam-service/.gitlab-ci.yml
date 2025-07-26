@@ -1,0 +1,29 @@
+stages:
+  - docker_build
+  - push_image
+  - deploy_kubernetes
+
+docker_build:
+  stage: docker_build
+  tags:
+    - linux
+  script:
+    - docker build -f Dockerfile -t cosmos/cosmos-iam-service .
+
+push_image:
+  stage: push_image
+  tags:
+    - linux
+  script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker tag cosmos/cosmos-iam-service $DOCKER_USERNAME/cosmos-iam-service:latest
+    - docker push $DOCKER_USERNAME/cosmos-iam-service:latest
+
+deploy_kubernetes:
+  stage: deploy_kubernetes
+  tags:
+    - linux
+  script:
+    - echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+    - export KUBECONFIG=$PWD/kubeconfig
+    - kubectl rollout restart deployment cosmos-iam-service

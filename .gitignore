@@ -12,10 +12,6 @@ target/
 *.iml
 *.ipr
 
-# Ignore embedded Git repos (non submodules)
-/SPI-Custom-ProtocolMapper/
-/cosmos-iam-service/
-
 ### Eclipse ###
 .apt_generated
 .classpath

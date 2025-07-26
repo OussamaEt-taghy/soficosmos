@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cosmos-iam-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cosmos-iam-service
+  template:
+    metadata:
+      labels:
+        app: cosmos-iam-service
+    spec:
+      containers:
+        - name: cosmos-iam-service
+          image: amdevops36/cosmos-iam-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: cosmos-iam-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cosmos-iam-service
+  labels:
+    app: cosmos-iam-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+  selector:
+    app: cosmos-iam-service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cosmos-iam-config
+  labels:
+    app: cosmos-iam-service
+data:
+  COSMOS_KEYCLOAK_AUTH_SERVER_URL: "http://keycloak:8080"
+  COSMOS_KEYCLOAK_ADMIN_REALM: "cosmos"
+  COSMOS_KEYCLOAK_REALM: "cosmos"
+  COSMOS_KEYCLOAK_ADMIN_CLIENT_ID: "cosmos-iam-service"
+  COSMOS_KEYCLOAK_ADMIN_CLIENT_SECRET: "Xtd3j8SHxCMtKTxT45jubBcbbiMaaFO0"
+  DB_USERNAME: "postgres"
+  DB_PASSWORD: "cosmos@@2025"
+  IAM_DB_HOST: "keycloak-db"
+  DB_PORT: "5432"
+  DB_NAME: "COSMOS-IAM-DB"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cosmos-iam-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-iam-service
+                port:
+                  number: 8081
+
+          - path: /swagger
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-iam-service
+                port:
+                  number: 8081
+
+          - path: /q/openapi
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-iam-service
+                port:
+                  number: 8081
+
+          - path: /API
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-iam-service
+                port:
+                  number: 8081
