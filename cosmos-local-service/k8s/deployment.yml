@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cosmos-loc-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cosmos-loc-service
+  template:
+    metadata:
+      labels:
+        app: cosmos-loc-service
+    spec:
+      containers:
+        - name: cosmos-loc-service
+          image: amdevops36/cosmos-loc-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8087
+          envFrom:
+            - configMapRef:
+                name: cosmos-loc-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cosmos-loc-service
+  labels:
+    app: cosmos-loc-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8087
+      targetPort: 8087
+  selector:
+    app: cosmos-loc-service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cosmos-loc-config
+  labels:
+    app: cosmos-loc-service
+data:
+  COSMOS_KEYCLOAK_AUTH_SERVER_URL: "http://192.168.1.7:32037"
+  COSMOS_KEYCLOAK_ADMIN_REALM: "cosmos"
+  COSMOS_KEYCLOAK_REALM: "cosmos"
+  COSMOS_KEYCLOAK_ADMIN_CLIENT_ID: "cosmos-loc-service"
+  COSMOS_KEYCLOAK_ADMIN_CLIENT_SECRET: "ilr0lCFfy5SF9Uku5VGbkbaZiaQRO4nj"
+  DB_USERNAME: "postgres"
+  DB_PASSWORD: "cosmos@@2025"
+  DB_PORT: "5432"
+  DB_NAME: "COSMOS-LOC-DB"
+  DB_KIND: "postgresql"
+  ACC_DB_HOST: "postgress-db"
+  IAM_SERVICE_URL: "http://192.168.1.7:32037/iam-apis"
+  PIM_SERVICE_URL: "http://192.168.1.7:32037/pim-apis"
+  TIER_GRAPHQL_SERVICE_URL : "http://192.168.1.7:32037/tier-apis"
+  ACC_GRAPHQL_SERVICE_URL : "http://192.168.1.7:32037/acc-apis"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cosmos-loc-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /cosmos-loc-swagger
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-loc-service
+                port:
+                  number: 8087
+          - path: /loc-apis
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-loc-service
+                port:
+                  number: 8087
+          - path: /cosmos-loc-swagger
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-loc-service
+                port:
+                  number: 8087
+
+          - path: /cosmos-loc-openapi
+            pathType: Prefix
+            backend:
+              service:
+                name: cosmos-loc-service
+                port:
+                  number: 8087
